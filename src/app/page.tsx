@@ -1,13 +1,21 @@
+import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
+import { Hero } from "@/components/landing/Hero";
+import { HowItWorks } from "@/components/landing/HowItWorks";
+import { Features } from "@/components/landing/Features";
+import { Occasions } from "@/components/landing/Occasions";
+
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-8">
-      <h1 className="text-5xl font-serif text-dark-green mb-4">Bloomora</h1>
-      <p className="text-xl text-soft-gray mb-8">
-        Digital bouquets, made personal.
-      </p>
-      <button className="px-8 py-3 bg-sage-green text-cream rounded-full font-medium hover:bg-dark-green transition-colors">
-        Create Your Bouquet
-      </button>
-    </main>
+    <>
+      <Header />
+      <main className="flex-1">
+        <Hero />
+        <HowItWorks />
+        <Features />
+        <Occasions />
+      </main>
+      <Footer />
+    </>
   );
 }

@@ -1,3 +1,7 @@
+"use client";
+
+import { motion } from "framer-motion";
+
 const features = [
   {
     title: "25+ Beautiful Flowers",
@@ -61,11 +65,31 @@ const features = [
   },
 ];
 
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const item = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0 },
+};
+
 export function Features() {
   return (
     <section className="py-20 bg-cream">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-12"
+        >
           <h2 className="text-3xl md:text-4xl font-serif font-bold text-dark-green mb-4">
             Everything You Need
           </h2>
@@ -73,12 +97,19 @@ export function Features() {
             Create a digital bouquet that feels personal, beautiful, and
             memorable.
           </p>
-        </div>
+        </motion.div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        <motion.div
+          variants={container}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true }}
+          className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto"
+        >
           {features.map((feature) => (
-            <div
+            <motion.div
               key={feature.title}
+              variants={item}
               className="p-6 rounded-2xl bg-white border border-blush-pink/20 hover:shadow-md transition-shadow"
             >
               <div className="w-12 h-12 rounded-xl bg-sage-green/10 flex items-center justify-center text-sage-green mb-4">
@@ -88,9 +119,9 @@ export function Features() {
                 {feature.title}
               </h3>
               <p className="text-soft-gray text-sm">{feature.description}</p>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );

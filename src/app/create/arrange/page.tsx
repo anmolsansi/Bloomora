@@ -1,0 +1,107 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useBouquet } from "@/lib/store";
+import { BouquetCanvas } from "@/components/builder/BouquetCanvas";
+import { ArrangementControls } from "@/components/builder/ArrangementControls";
+import { Button } from "@/components/ui/Button";
+
+export default function ArrangePage() {
+  const router = useRouter();
+  const { state, dispatch } = useBouquet();
+
+  const handleRandomize = () => {
+    const positions = generatePositions(
+      state.selectedFlowers,
+      state.arrangement.bouquetShape,
+      state.arrangement.fullness
+    );
+    dispatch({
+      type: "SET_ARRANGEMENT",
+      arrangement: { ...state.arrangement, positions },
+    });
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl md:text-4xl font-serif font-bold text-dark-green mb-2">
+            Arrange Your Bouquet
+          </h1>
+          <p className="text-soft-gray">
+            Adjust the style and try different arrangements
+          </p>
+        </div>
+
+        <div className="grid lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <BouquetCanvas />
+          </div>
+
+          <div className="lg:col-span-1">
+            <ArrangementControls />
+            <Button
+              onClick={handleRandomize}
+              variant="secondary"
+              className="w-full mt-4"
+            >
+              Try New Arrangement
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex justify-between items-center mt-8">
+          <Button variant="ghost" onClick={() => router.push("/create/flowers")}>
+            Back
+          </Button>
+          <Button onClick={() => router.push("/create/customize")}>
+            Continue to Style
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function generatePositions(
+  selectedFlowers: { flowerId: string; count: number; color: string }[],
+  _shape: string,
+  _fullness: number
+) {
+  const positions: {
+    flowerId: string;
+    x: number;
+    y: number;
+    scale: number;
+    rotation: number;
+    layer: number;
+  }[] = [];
+
+  const centerX = 200;
+  const centerY = 200;
+  const maxRadius = 120;
+
+  selectedFlowers.forEach((flower) => {
+    for (let i = 0; i < flower.count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const radius = Math.random() * maxRadius * 0.8;
+      const x = centerX + Math.cos(angle) * radius - 40;
+      const y = centerY + Math.sin(angle) * radius - 40;
+      const scale = 0.7 + Math.random() * 0.5;
+      const rotation = -15 + Math.random() * 30;
+      const layer = Math.floor(Math.random() * 3) + 2;
+
+      positions.push({
+        flowerId: flower.flowerId,
+        x,
+        y,
+        scale,
+        rotation,
+        layer,
+      });
+    }
+  });
+
+  return positions.sort((a, b) => a.layer - b.layer);
+}

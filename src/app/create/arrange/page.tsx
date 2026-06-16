@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useBouquet } from "@/lib/store";
 import { BouquetCanvas } from "@/components/builder/BouquetCanvas";
@@ -9,6 +10,27 @@ import { Button } from "@/components/ui/Button";
 export default function ArrangePage() {
   const router = useRouter();
   const { state, dispatch } = useBouquet();
+
+  useEffect(() => {
+    if (state.selectedFlowers.length === 0) {
+      router.replace("/create/flowers");
+      return;
+    }
+
+    if (state.arrangement.positions.length === 0) {
+      const positions = generatePositions(
+        state.selectedFlowers,
+        state.arrangement.bouquetShape,
+        state.arrangement.fullness
+      );
+      dispatch({
+        type: "SET_ARRANGEMENT",
+        arrangement: { ...state.arrangement, positions },
+      });
+    }
+    // Only run on mount to auto-generate initial arrangement
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleRandomize = () => {
     const positions = generatePositions(

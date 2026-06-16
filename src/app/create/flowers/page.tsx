@@ -82,7 +82,7 @@ export default function FlowersPage() {
               count={getFlowerCount(flower.id)}
               onSelect={() => handleSelectFlower(flower.id)}
               disabled={
-                !canProceed && getFlowerCount(flower.id) === 0
+                totalFlowers >= MAX_FLOWERS && getFlowerCount(flower.id) === 0
               }
             />
           ))}

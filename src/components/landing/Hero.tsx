@@ -41,9 +41,9 @@ export function Hero() {
                 Create Your Bouquet
               </Button>
             </Link>
-            <Link href="/examples">
+            <Link href="/about">
               <Button variant="secondary" size="lg" className="text-lg px-10">
-                Explore Examples
+                Learn More
               </Button>
             </Link>
           </motion.div>

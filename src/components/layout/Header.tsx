@@ -13,9 +13,6 @@ export function Header() {
           </span>
         </Link>
         <nav className="flex items-center gap-4">
-          <Link href="/examples" className="text-sm text-soft-gray hover:text-dark-green transition-colors hidden sm:block">
-            Examples
-          </Link>
           <Link href="/about" className="text-sm text-soft-gray hover:text-dark-green transition-colors hidden sm:block">
             About
           </Link>

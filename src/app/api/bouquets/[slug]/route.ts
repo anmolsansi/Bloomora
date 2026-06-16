@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getSupabase } from "@/lib/supabase";
 import { bouquetStore } from "../route";
 
 export async function GET(
@@ -7,6 +8,37 @@ export async function GET(
 ) {
   try {
     const { slug } = await params;
+    const supabase = getSupabase();
+
+    if (supabase) {
+      const { data, error } = await supabase
+        .from("bouquets")
+        .select("*")
+        .eq("slug", slug)
+        .single();
+
+      if (error || !data) {
+        return NextResponse.json(
+          { error: "Bouquet not found" },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json({
+        id: data.id,
+        slug: data.slug,
+        recipientName: data.recipient_name,
+        senderName: data.sender_name,
+        message: data.message,
+        occasion: data.occasion,
+        selectedFlowers: data.selected_flowers,
+        arrangementData: data.arrangement_data,
+        styleData: data.style_data,
+        createdAt: data.created_at,
+      });
+    }
+
+    // Fallback to in-memory storage
     const bouquet = bouquetStore.get(slug);
 
     if (!bouquet) {
@@ -16,7 +48,6 @@ export async function GET(
       );
     }
 
-    // Return bouquet data (read-only for recipient)
     return NextResponse.json({
       id: bouquet.id,
       slug: bouquet.slug,

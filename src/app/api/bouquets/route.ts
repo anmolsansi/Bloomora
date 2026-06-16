@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateSlug } from "@/lib/slug";
+import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 import type { SelectedFlower, ArrangementData, StyleData } from "@/types/bouquet";
 
 interface CreateBouquetRequest {
@@ -15,7 +16,7 @@ interface CreateBouquetRequest {
   deliveryMethod?: string;
 }
 
-// In-memory store for MVP (will be replaced by Supabase)
+// In-memory fallback store
 const bouquetStore = new Map<
   string,
   {
@@ -52,29 +53,53 @@ export async function POST(request: Request) {
     const slug = generateSlug();
     const now = new Date().toISOString();
 
-    const bouquet = {
+    const bouquetData = {
       id,
       slug,
-      recipientName: body.recipientName,
-      senderName: body.senderName,
-      recipientEmail: body.recipientEmail || null,
-      senderEmail: body.senderEmail || null,
+      recipient_name: body.recipientName,
+      sender_name: body.senderName,
+      recipient_email: body.recipientEmail || null,
+      sender_email: body.senderEmail || null,
       message: body.message,
       occasion: body.occasion || null,
-      selectedFlowers: body.selectedFlowers,
-      arrangementData: body.arrangementData,
-      styleData: body.styleData,
-      deliveryMethod: body.deliveryMethod || null,
-      emailSentAt: null,
-      createdAt: now,
-      updatedAt: now,
+      selected_flowers: body.selectedFlowers,
+      arrangement_data: body.arrangementData,
+      style_data: body.styleData,
+      delivery_method: body.deliveryMethod || null,
+      email_sent_at: null,
+      created_at: now,
+      updated_at: now,
     };
 
-    // Store bouquet (in-memory for MVP)
-    bouquetStore.set(slug, bouquet);
+    const supabase = getSupabase();
 
-    // TODO: Save to Supabase when configured
-    // const { data, error } = await supabase.from('bouquets').insert(bouquet);
+    if (supabase) {
+      const { error } = await supabase.from("bouquets").insert(bouquetData);
+      if (error) {
+        console.error("Supabase error:", error);
+        return NextResponse.json(
+          { error: "Failed to save bouquet" },
+          { status: 500 }
+        );
+      }
+    } else {
+      // Fallback to in-memory storage
+      bouquetStore.set(slug, {
+        ...bouquetData,
+        recipientName: bouquetData.recipient_name,
+        senderName: bouquetData.sender_name,
+        recipientEmail: bouquetData.recipient_email,
+        senderEmail: bouquetData.sender_email,
+        occasion: bouquetData.occasion,
+        selectedFlowers: bouquetData.selected_flowers,
+        arrangementData: bouquetData.arrangement_data,
+        styleData: bouquetData.style_data,
+        deliveryMethod: bouquetData.delivery_method,
+        emailSentAt: bouquetData.email_sent_at,
+        createdAt: bouquetData.created_at,
+        updatedAt: bouquetData.updated_at,
+      });
+    }
 
     return NextResponse.json({ slug, id });
   } catch (error) {

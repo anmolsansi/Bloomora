@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getSupabase } from "@/lib/supabase";
 import { bouquetStore } from "../../route";
 import { sendEmail, generateBouquetEmailHtml } from "@/lib/email";
 
@@ -9,13 +10,38 @@ export async function POST(
   try {
     const { slug } = await params;
     const body = await request.json();
-    const bouquet = bouquetStore.get(slug);
+    const supabase = getSupabase();
 
-    if (!bouquet) {
-      return NextResponse.json(
-        { error: "Bouquet not found" },
-        { status: 404 }
-      );
+    let bouquet;
+
+    if (supabase) {
+      const { data, error } = await supabase
+        .from("bouquets")
+        .select("*")
+        .eq("slug", slug)
+        .single();
+
+      if (error || !data) {
+        return NextResponse.json(
+          { error: "Bouquet not found" },
+          { status: 404 }
+        );
+      }
+
+      bouquet = {
+        recipientName: data.recipient_name,
+        senderName: data.sender_name,
+        message: data.message,
+      };
+    } else {
+      const stored = bouquetStore.get(slug);
+      if (!stored) {
+        return NextResponse.json(
+          { error: "Bouquet not found" },
+          { status: 404 }
+        );
+      }
+      bouquet = stored;
     }
 
     const { recipientEmail, senderEmail, deliveryNote } = body;
@@ -48,8 +74,18 @@ export async function POST(
 
     if (result.success) {
       // Update email sent timestamp
-      bouquet.emailSentAt = new Date().toISOString();
-      bouquetStore.set(slug, bouquet);
+      if (supabase) {
+        await supabase
+          .from("bouquets")
+          .update({ email_sent_at: new Date().toISOString() })
+          .eq("slug", slug);
+      } else {
+        const stored = bouquetStore.get(slug);
+        if (stored) {
+          stored.emailSentAt = new Date().toISOString();
+          bouquetStore.set(slug, stored);
+        }
+      }
 
       return NextResponse.json({ success: true });
     } else {

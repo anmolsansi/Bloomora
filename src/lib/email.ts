@@ -1,3 +1,8 @@
+import { Resend } from "resend";
+
+const resendApiKey = process.env.RESEND_API_KEY || "";
+const fromEmail = "Bloomora <onboarding@resend.dev>";
+
 interface EmailData {
   to: string;
   from?: string;
@@ -6,17 +11,37 @@ interface EmailData {
   text: string;
 }
 
-export async function sendEmail(data: EmailData): Promise<{ success: boolean; error?: string }> {
-  // Stub: In production, this would use Resend
-  console.log("Email stub - would send:", {
-    to: data.to,
-    from: data.from || "bloomora@bloomora.app",
-    subject: data.subject,
-  });
-  console.log("HTML preview:", data.html.slice(0, 200) + "...");
+export async function sendEmail(
+  data: EmailData
+): Promise<{ success: boolean; error?: string }> {
+  if (!resendApiKey) {
+    console.warn("Resend API key not configured. Email not sent.");
+    console.log("Would send email:", {
+      to: data.to,
+      subject: data.subject,
+    });
+    return { success: true, error: "Resend not configured" };
+  }
 
-  // Simulate successful send
-  return { success: true };
+  try {
+    const resend = new Resend(resendApiKey);
+
+    await resend.emails.send({
+      from: data.from || fromEmail,
+      to: data.to,
+      subject: data.subject,
+      html: data.html,
+      text: data.text,
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to send email:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to send email",
+    };
+  }
 }
 
 export function generateBouquetEmailHtml(params: {

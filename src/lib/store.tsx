@@ -3,7 +3,9 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useReducer,
+  useRef,
   type ReactNode,
 } from "react";
 import type {
@@ -14,7 +16,10 @@ import type {
   MessageData,
 } from "@/types/bouquet";
 
+const STORAGE_KEY = "bouquet_builder_state";
+
 type BouquetAction =
+  | { type: "HYDRATE"; state: BouquetState }
   | { type: "SELECT_FLOWER"; flower: SelectedFlower }
   | { type: "REMOVE_FLOWER"; flowerId: string }
   | { type: "UPDATE_FLOWER_COUNT"; flowerId: string; count: number }
@@ -48,11 +53,44 @@ const initialState: BouquetState = {
   currentStep: 1,
 };
 
+function loadState(): BouquetState {
+  if (typeof window === "undefined") return initialState;
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    if (!raw) return initialState;
+    const parsed = JSON.parse(raw);
+    if (typeof parsed !== "object" || parsed === null) return initialState;
+    return { ...initialState, ...parsed };
+  } catch {
+    return initialState;
+  }
+}
+
+function saveState(state: BouquetState): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // Storage full or unavailable — silently ignore
+  }
+}
+
+function clearState(): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Silently ignore
+  }
+}
+
 function bouquetReducer(
   state: BouquetState,
   action: BouquetAction
 ): BouquetState {
   switch (action.type) {
+    case "HYDRATE":
+      return { ...initialState, ...action.state };
     case "SELECT_FLOWER": {
       const existing = state.selectedFlowers.find(
         (f) => f.flowerId === action.flower.flowerId
@@ -116,6 +154,7 @@ function bouquetReducer(
     case "SET_STEP":
       return { ...state, currentStep: action.step };
     case "RESET":
+      clearState();
       return initialState;
     default:
       return state;
@@ -132,6 +171,27 @@ const BouquetContext = createContext<BouquetContextType | null>(null);
 
 export function BouquetProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(bouquetReducer, initialState);
+  const hydratedRef = useRef(false);
+
+  useEffect(() => {
+    const saved = loadState();
+    const hasSavedData =
+      saved.selectedFlowers.length > 0 ||
+      saved.message.recipientName !== "" ||
+      saved.message.senderName !== "" ||
+      saved.message.message !== "";
+    if (hasSavedData) {
+      dispatch({ type: "HYDRATE", state: saved });
+    }
+    hydratedRef.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (hydratedRef.current) {
+      saveState(state);
+    }
+  }, [state]);
+
   const totalFlowers = state.selectedFlowers.reduce(
     (sum, f) => sum + f.count,
     0

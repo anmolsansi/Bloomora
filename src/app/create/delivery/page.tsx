@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useBouquet } from "@/lib/store";
 import { EmailForm, type EmailFormData } from "@/components/builder/EmailForm";
@@ -11,6 +11,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 export default function DeliveryPage() {
   const router = useRouter();
   const { state } = useBouquet();
+
+  useEffect(() => {
+    if (!state.message.recipientName.trim()) {
+      router.replace("/create/message");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [deliveryMethod, setDeliveryMethod] = useState<"email" | "link" | null>(
     null
   );

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { generateSlug } from "@/lib/slug";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import type { SelectedFlower, ArrangementData, StyleData } from "@/types/bouquet";
@@ -48,11 +49,22 @@ const bouquetStore = new Map<
 
 export async function POST(request: Request) {
   try {
-    const body: CreateBouquetRequest = await request.json();
+    const body = await request.json();
+    const parsed = createBouquetSchema.safeParse(body);
 
-    if (!body.recipientName || !body.message) {
+    if (!parsed.success) {
+      const firstError = parsed.error.issues[0];
       return NextResponse.json(
-        { error: "Recipient name and message are required" },
+        { error: firstError?.message || "Invalid request body" },
+        { status: 400 }
+      );
+    }
+
+    const data = parsed.data;
+
+    if (data.deliveryMethod === "email" && !data.recipientEmail) {
+      return NextResponse.json(
+        { error: "Recipient email is required for email delivery" },
         { status: 400 }
       );
     }
@@ -158,16 +170,16 @@ export async function POST(request: Request) {
     const bouquetData = {
       id,
       slug,
-      recipient_name: body.recipientName,
-      sender_name: body.senderName,
-      recipient_email: body.recipientEmail || null,
-      sender_email: body.senderEmail || null,
-      message: body.message,
-      occasion: body.occasion || null,
-      selected_flowers: body.selectedFlowers,
-      arrangement_data: body.arrangementData,
-      style_data: body.styleData,
-      delivery_method: body.deliveryMethod || null,
+      recipient_name: data.recipientName,
+      sender_name: data.senderName,
+      recipient_email: data.recipientEmail || null,
+      sender_email: data.senderEmail || null,
+      message: data.message,
+      occasion: data.occasion || null,
+      selected_flowers: data.selectedFlowers,
+      arrangement_data: data.arrangementData,
+      style_data: data.styleData,
+      delivery_method: data.deliveryMethod || null,
       email_sent_at: null,
       created_at: now,
       updated_at: now,
@@ -185,7 +197,7 @@ export async function POST(request: Request) {
         );
       }
     } else {
-      // Fallback to in-memory storage
+      // Fallback to in-memory storage (development only)
       bouquetStore.set(slug, {
         ...bouquetData,
         recipientName: bouquetData.recipient_name,

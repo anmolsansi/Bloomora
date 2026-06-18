@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useBouquet } from "@/lib/store";
 import { StyleSelector } from "@/components/builder/StyleSelector";
@@ -39,6 +40,13 @@ const cardStyleOptions = [
 export default function CustomizePage() {
   const router = useRouter();
   const { state, dispatch } = useBouquet();
+
+  useEffect(() => {
+    if (state.arrangement.positions.length === 0) {
+      router.replace("/create/arrange");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const updateStyle = (updates: Partial<typeof state.style>) => {
     dispatch({ type: "SET_STYLE", style: { ...state.style, ...updates } });

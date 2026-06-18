@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useBouquet } from "@/lib/store";
 import { MessageForm } from "@/components/builder/MessageForm";
@@ -9,6 +10,13 @@ import { Button } from "@/components/ui/Button";
 export default function MessagePage() {
   const router = useRouter();
   const { state } = useBouquet();
+
+  useEffect(() => {
+    if (state.selectedFlowers.length === 0) {
+      router.replace("/create/flowers");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const canProceed =
     state.message.recipientName.trim() &&

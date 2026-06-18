@@ -20,7 +20,10 @@ export async function sendEmail(
       to: data.to,
       subject: data.subject,
     });
-    return { success: true, error: "Resend not configured" };
+    return {
+      success: false,
+      error: "Resend API key not configured. Email was not sent.",
+    };
   }
 
   try {
@@ -44,6 +47,15 @@ export async function sendEmail(
   }
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
 export function generateBouquetEmailHtml(params: {
   recipientName: string;
   senderName: string;
@@ -51,6 +63,12 @@ export function generateBouquetEmailHtml(params: {
   bouquetUrl: string;
   deliveryNote?: string;
 }): string {
+  const safeRecipient = escapeHtml(params.recipientName);
+  const safeMessage = escapeHtml(params.message);
+  const safeSender = escapeHtml(params.senderName);
+  const safeNote = params.deliveryNote ? escapeHtml(params.deliveryNote) : "";
+  const safeUrl = escapeHtml(params.bouquetUrl);
+
   return `
     <!DOCTYPE html>
     <html>
@@ -68,11 +86,11 @@ export function generateBouquetEmailHtml(params: {
     <body>
       <div class="card">
         <h1>A bouquet was made for you!</h1>
-        <p class="message">Dear ${params.recipientName},</p>
-        <p class="message">${params.message}</p>
-        <p class="sender">With love,<br>${params.senderName}</p>
-        ${params.deliveryNote ? `<p style="color: #8C8C8C; font-size: 14px; margin-top: 20px;">${params.deliveryNote}</p>` : ""}
-        <a href="${params.bouquetUrl}" class="btn">Open Your Bouquet</a>
+        <p class="message">Dear ${safeRecipient},</p>
+        <p class="message">${safeMessage}</p>
+        <p class="sender">With love,<br>${safeSender}</p>
+        ${safeNote ? `<p style="color: #8C8C8C; font-size: 14px; margin-top: 20px;">${safeNote}</p>` : ""}
+        <a href="${safeUrl}" class="btn">Open Your Bouquet</a>
       </div>
     </body>
     </html>

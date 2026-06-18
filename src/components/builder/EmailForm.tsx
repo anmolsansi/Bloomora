@@ -5,8 +5,14 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
 
+export interface EmailFormData {
+  recipientEmail: string;
+  senderEmail: string;
+  deliveryNote: string;
+}
+
 interface EmailFormProps {
-  onSend: () => void;
+  onSend: (data: EmailFormData) => void;
   isSending: boolean;
 }
 
@@ -36,7 +42,7 @@ export function EmailForm({ onSend, isSending }: EmailFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validate()) {
-      onSend();
+      onSend({ recipientEmail, senderEmail, deliveryNote });
     }
   };
 

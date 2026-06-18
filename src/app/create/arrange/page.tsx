@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useBouquet } from "@/lib/store";
+import { generatePositions } from "@/lib/arrangement";
 import { BouquetCanvas } from "@/components/builder/BouquetCanvas";
 import { ArrangementControls } from "@/components/builder/ArrangementControls";
 import { Button } from "@/components/ui/Button";
@@ -84,46 +85,4 @@ export default function ArrangePage() {
       </div>
     </div>
   );
-}
-
-function generatePositions(
-  selectedFlowers: { flowerId: string; count: number; color: string }[],
-  _shape: string,
-  _fullness: number
-) {
-  const positions: {
-    flowerId: string;
-    x: number;
-    y: number;
-    scale: number;
-    rotation: number;
-    layer: number;
-  }[] = [];
-
-  const centerX = 200;
-  const centerY = 200;
-  const maxRadius = 120;
-
-  selectedFlowers.forEach((flower) => {
-    for (let i = 0; i < flower.count; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const radius = Math.random() * maxRadius * 0.8;
-      const x = centerX + Math.cos(angle) * radius - 40;
-      const y = centerY + Math.sin(angle) * radius - 40;
-      const scale = 0.7 + Math.random() * 0.5;
-      const rotation = -15 + Math.random() * 30;
-      const layer = Math.floor(Math.random() * 3) + 2;
-
-      positions.push({
-        flowerId: flower.flowerId,
-        x,
-        y,
-        scale,
-        rotation,
-        layer,
-      });
-    }
-  });
-
-  return positions.sort((a, b) => a.layer - b.layer);
 }

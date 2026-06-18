@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { RecipientBouquet } from "@/components/recipient/RecipientBouquet";
@@ -45,26 +45,58 @@ export default function RecipientPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const canShare = useMemo(
+    () => typeof navigator !== "undefined" && "share" in navigator,
+    []
+  );
 
   useEffect(() => {
+    let cancelled = false;
+
     async function fetchBouquet() {
       try {
-        const response = await fetch(`/api/bouquets/${slug}`);
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000);
+
+        const response = await fetch(`/api/bouquets/${slug}`, {
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+
         if (!response.ok) {
-          throw new Error("Bouquet not found");
+          const errorData = await response.json().catch(() => null);
+          throw new Error(errorData?.error || "Bouquet not found");
         }
+
         const data = await response.json();
-        setBouquet(data);
-        // Start reveal animation after data loads
-        setTimeout(() => setRevealed(true), 300);
+
+        if (!cancelled) {
+          setBouquet(data);
+          setTimeout(() => setRevealed(true), 300);
+        }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load bouquet");
+        if (!cancelled) {
+          setError(
+            err instanceof DOMException && err.name === "AbortError"
+              ? "Request timed out. Please try again."
+              : err instanceof Error
+                ? err.message
+                : "Failed to load bouquet"
+          );
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
 
     fetchBouquet();
+
+    return () => {
+      cancelled = true;
+    };
   }, [slug]);
 
   if (loading) {
@@ -174,13 +206,28 @@ export default function RecipientPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
             <Button
               onClick={() => {
-                const url = window.location.href;
-                navigator.clipboard.writeText(url);
+                navigator.clipboard.writeText(window.location.href);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
               }}
               variant="secondary"
             >
-              Copy Link
+              {copied ? "Copied!" : "Copy Link"}
             </Button>
+            {canShare && (
+              <Button
+                onClick={() => {
+                  navigator.share({
+                    title: "A bouquet for you!",
+                    text: `Dear ${bouquet.recipientName}, a bouquet was made for you!`,
+                    url: window.location.href,
+                  });
+                }}
+                variant="secondary"
+              >
+                Share
+              </Button>
+            )}
             <Link href="/create">
               <Button>Create Your Own Bouquet</Button>
             </Link>

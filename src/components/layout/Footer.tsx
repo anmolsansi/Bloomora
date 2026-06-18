@@ -21,12 +21,6 @@ export function Footer() {
               About
             </Link>
             <Link
-              href="/examples"
-              className="text-sm text-soft-gray hover:text-dark-green transition-colors"
-            >
-              Examples
-            </Link>
-            <Link
               href="/create"
               className="text-sm text-soft-gray hover:text-dark-green transition-colors"
             >

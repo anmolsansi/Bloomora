@@ -1,45 +1,29 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { generateSlug } from "@/lib/slug";
-import { getSupabase } from "@/lib/supabase";
+import { getSupabaseAdmin } from "@/lib/supabase";
 import type { SelectedFlower, ArrangementData, StyleData } from "@/types/bouquet";
 
-const selectedFlowerSchema = z.object({
-  flowerId: z.string().min(1),
-  count: z.number().int().min(1).max(15),
-  color: z.string().min(1),
-});
+const VALID_STYLES = ["romantic", "wild_garden", "classic", "minimal", "bright", "soft_pastel", "elegant"];
+const VALID_GREENERY = ["soft_garden", "trailing", "structured", "wild"];
+const VALID_SHAPES = ["round", "cascading", "hand_tied", "presentation"];
+const VALID_WRAPPERS = ["soft_pink", "kraft", "white_satin", "garden_green"];
+const VALID_RIBBONS = ["rose", "cream", "sage", "gold", "lavender", "navy"];
+const VALID_BACKGROUNDS = ["warm_cream", "soft_blush", "sage_garden", "twilight"];
+const VALID_CARD_STYLES = ["floral_border", "minimal", "vintage", "modern"];
 
-const createBouquetSchema = z.object({
-  selectedFlowers: z.array(selectedFlowerSchema).min(1).max(50),
-  arrangementData: z.object({
-    style: z.enum(["romantic", "wild_garden", "classic", "minimal", "bright", "soft_pastel", "elegant"]),
-    positions: z.array(z.object({
-      flowerId: z.string(),
-      x: z.number(),
-      y: z.number(),
-      scale: z.number(),
-      rotation: z.number(),
-      layer: z.number(),
-    })).min(1),
-    greeneryStyle: z.enum(["soft_garden", "trailing", "structured", "wild"]),
-    bouquetShape: z.enum(["round", "cascading", "hand_tied", "presentation"]),
-    fullness: z.number().min(0).max(1),
-  }),
-  styleData: z.object({
-    wrapper: z.enum(["soft_pink", "kraft", "white_satin", "garden_green"]),
-    ribbon: z.enum(["rose", "cream", "sage", "gold", "lavender", "navy"]),
-    background: z.enum(["warm_cream", "soft_blush", "sage_garden", "twilight"]),
-    cardStyle: z.enum(["floral_border", "minimal", "vintage", "modern"]),
-  }),
-  recipientName: z.string().min(1).max(50),
-  senderName: z.string().min(1).max(50),
-  message: z.string().min(1).max(500),
-  occasion: z.string().max(50).optional(),
-  recipientEmail: z.string().email().optional(),
-  senderEmail: z.string().email().optional(),
-  deliveryMethod: z.enum(["email", "link"]).optional(),
-});
+interface CreateBouquetRequest {
+  selectedFlowers: SelectedFlower[];
+  arrangementData: ArrangementData;
+  styleData: StyleData;
+  recipientName: string;
+  senderName: string;
+  message: string;
+  occasion?: string;
+  recipientEmail?: string;
+  senderEmail?: string;
+  deliveryMethod?: string;
+}
 
 // In-memory fallback store
 const bouquetStore = new Map<
@@ -85,13 +69,98 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabase = getSupabase();
-
-    if (!supabase && process.env.NODE_ENV === "production") {
+    if (body.recipientName.length > 100) {
       return NextResponse.json(
-        { error: "Database not configured. Cannot save bouquet in production." },
-        { status: 500 }
+        { error: "Recipient name must be 100 characters or less" },
+        { status: 400 }
       );
+    }
+
+    if (body.message.length > 500) {
+      return NextResponse.json(
+        { error: "Message must be 500 characters or less" },
+        { status: 400 }
+      );
+    }
+
+    if (body.senderName && body.senderName.length > 100) {
+      return NextResponse.json(
+        { error: "Sender name must be 100 characters or less" },
+        { status: 400 }
+      );
+    }
+
+    if (!Array.isArray(body.selectedFlowers) || body.selectedFlowers.length === 0) {
+      return NextResponse.json(
+        { error: "At least one flower is required" },
+        { status: 400 }
+      );
+    }
+
+    if (body.selectedFlowers.length > 15) {
+      return NextResponse.json(
+        { error: "Maximum 15 flowers allowed" },
+        { status: 400 }
+      );
+    }
+
+    for (const flower of body.selectedFlowers) {
+      if (!flower.flowerId || typeof flower.flowerId !== "string") {
+        return NextResponse.json(
+          { error: "Invalid flower data" },
+          { status: 400 }
+        );
+      }
+      if (!flower.color || typeof flower.color !== "string") {
+        return NextResponse.json(
+          { error: "Invalid flower color" },
+          { status: 400 }
+        );
+      }
+      if (typeof flower.count !== "number" || flower.count < 1 || flower.count > 10) {
+        return NextResponse.json(
+          { error: "Invalid flower count" },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (body.arrangementData) {
+      if (!VALID_STYLES.includes(body.arrangementData.style)) {
+        return NextResponse.json({ error: "Invalid arrangement style" }, { status: 400 });
+      }
+      if (!VALID_GREENERY.includes(body.arrangementData.greeneryStyle)) {
+        return NextResponse.json({ error: "Invalid greenery style" }, { status: 400 });
+      }
+      if (!VALID_SHAPES.includes(body.arrangementData.bouquetShape)) {
+        return NextResponse.json({ error: "Invalid bouquet shape" }, { status: 400 });
+      }
+      if (typeof body.arrangementData.fullness !== "number" || body.arrangementData.fullness < 0.3 || body.arrangementData.fullness > 1) {
+        return NextResponse.json({ error: "Invalid fullness value" }, { status: 400 });
+      }
+    }
+
+    if (body.styleData) {
+      if (!VALID_WRAPPERS.includes(body.styleData.wrapper)) {
+        return NextResponse.json({ error: "Invalid wrapper style" }, { status: 400 });
+      }
+      if (!VALID_RIBBONS.includes(body.styleData.ribbon)) {
+        return NextResponse.json({ error: "Invalid ribbon style" }, { status: 400 });
+      }
+      if (!VALID_BACKGROUNDS.includes(body.styleData.background)) {
+        return NextResponse.json({ error: "Invalid background style" }, { status: 400 });
+      }
+      if (!VALID_CARD_STYLES.includes(body.styleData.cardStyle)) {
+        return NextResponse.json({ error: "Invalid card style" }, { status: 400 });
+      }
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (body.recipientEmail && !emailRegex.test(body.recipientEmail)) {
+      return NextResponse.json({ error: "Invalid recipient email" }, { status: 400 });
+    }
+    if (body.senderEmail && !emailRegex.test(body.senderEmail)) {
+      return NextResponse.json({ error: "Invalid sender email" }, { status: 400 });
     }
 
     const id = crypto.randomUUID();
@@ -115,6 +184,8 @@ export async function POST(request: Request) {
       created_at: now,
       updated_at: now,
     };
+
+    const supabase = getSupabaseAdmin();
 
     if (supabase) {
       const { error } = await supabase.from("bouquets").insert(bouquetData);

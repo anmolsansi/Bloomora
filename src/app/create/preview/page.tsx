@@ -8,14 +8,16 @@ import { FullPreview } from "@/components/builder/FullPreview";
 
 export default function PreviewPage() {
   const router = useRouter();
-  const { state } = useBouquet();
+  const { state, isHydrated } = useBouquet();
 
   useEffect(() => {
+    if (!isHydrated) return;
+
     if (!state.message.recipientName.trim()) {
       router.replace("/create/message");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isHydrated]);
 
   return (
     <div className="container mx-auto px-4 py-8">

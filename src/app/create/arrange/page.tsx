@@ -10,9 +10,11 @@ import { Button } from "@/components/ui/Button";
 
 export default function ArrangePage() {
   const router = useRouter();
-  const { state, dispatch } = useBouquet();
+  const { state, dispatch, isHydrated } = useBouquet();
 
   useEffect(() => {
+    if (!isHydrated) return;
+
     if (state.selectedFlowers.length === 0) {
       router.replace("/create/flowers");
       return;
@@ -31,7 +33,7 @@ export default function ArrangePage() {
     }
     // Only run on mount to auto-generate initial arrangement
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isHydrated]);
 
   const handleRandomize = () => {
     const positions = generatePositions(

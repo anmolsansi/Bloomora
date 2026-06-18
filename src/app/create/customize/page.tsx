@@ -39,14 +39,16 @@ const cardStyleOptions = [
 
 export default function CustomizePage() {
   const router = useRouter();
-  const { state, dispatch } = useBouquet();
+  const { state, dispatch, isHydrated } = useBouquet();
 
   useEffect(() => {
+    if (!isHydrated) return;
+
     if (state.arrangement.positions.length === 0) {
       router.replace("/create/arrange");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isHydrated]);
 
   const updateStyle = (updates: Partial<typeof state.style>) => {
     dispatch({ type: "SET_STYLE", style: { ...state.style, ...updates } });

@@ -10,14 +10,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 
 export default function DeliveryPage() {
   const router = useRouter();
-  const { state } = useBouquet();
+  const { state, isHydrated } = useBouquet();
 
   useEffect(() => {
+    if (!isHydrated) return;
+
     if (!state.message.recipientName.trim()) {
       router.replace("/create/message");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isHydrated]);
   const [deliveryMethod, setDeliveryMethod] = useState<"email" | "link" | null>(
     null
   );

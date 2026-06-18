@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useBouquet } from "@/lib/store";
-import { EmailForm } from "@/components/builder/EmailForm";
+import { EmailForm, type EmailFormData } from "@/components/builder/EmailForm";
 import { ShareLink } from "@/components/builder/ShareLink";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -16,9 +16,12 @@ export default function DeliveryPage() {
   );
   const [bouquetSlug, setBouquetSlug] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
 
-  const handleCreateBouquet = async () => {
+  const handleCreateBouquet = async (emailData?: EmailFormData) => {
     setIsCreating(true);
+    setEmailError(null);
     try {
       const response = await fetch("/api/bouquets", {
         method: "POST",
@@ -31,13 +34,48 @@ export default function DeliveryPage() {
           senderName: state.message.senderName,
           message: state.message.message,
           occasion: state.message.occasion,
+          recipientEmail: emailData?.recipientEmail,
+          senderEmail: emailData?.senderEmail,
+          deliveryNote: emailData?.deliveryNote,
           deliveryMethod,
         }),
       });
       const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create bouquet");
+      }
+
       setBouquetSlug(data.slug);
+
+      if (deliveryMethod === "email" && emailData?.recipientEmail) {
+        const emailResponse = await fetch(
+          `/api/bouquets/${data.slug}/send-email`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              recipientEmail: emailData.recipientEmail,
+              senderEmail: emailData.senderEmail,
+              deliveryNote: emailData.deliveryNote,
+            }),
+          }
+        );
+
+        const emailResult = await emailResponse.json();
+
+        if (!emailResponse.ok) {
+          setEmailError(
+            emailResult.error || "Bouquet created but email failed to send"
+          );
+        } else {
+          setEmailSent(true);
+        }
+      }
     } catch (error) {
-      console.error("Failed to create bouquet:", error);
+      setEmailError(
+        error instanceof Error ? error.message : "Failed to create bouquet"
+      );
     } finally {
       setIsCreating(false);
     }
@@ -66,6 +104,22 @@ export default function DeliveryPage() {
           <h1 className="text-3xl font-serif font-bold text-dark-green mb-4">
             Your Bouquet is Ready!
           </h1>
+
+          {emailSent && (
+            <p className="text-sage-green font-medium mb-4">
+              Email sent successfully!
+            </p>
+          )}
+
+          {emailError && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+              <p className="text-red-700 text-sm">{emailError}</p>
+              <p className="text-red-500 text-xs mt-1">
+                You can still share the link below.
+              </p>
+            </div>
+          )}
+
           <p className="text-soft-gray mb-8">
             Share it with someone special
           </p>
@@ -175,7 +229,7 @@ export default function DeliveryPage() {
         {deliveryMethod === "link" && (
           <div className="text-center">
             <Button
-              onClick={handleCreateBouquet}
+              onClick={() => handleCreateBouquet()}
               disabled={isCreating}
               size="lg"
             >

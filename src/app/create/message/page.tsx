@@ -9,14 +9,16 @@ import { Button } from "@/components/ui/Button";
 
 export default function MessagePage() {
   const router = useRouter();
-  const { state } = useBouquet();
+  const { state, isHydrated } = useBouquet();
 
   useEffect(() => {
+    if (!isHydrated) return;
+
     if (state.selectedFlowers.length === 0) {
       router.replace("/create/flowers");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isHydrated]);
 
   const canProceed =
     state.message.recipientName.trim() &&

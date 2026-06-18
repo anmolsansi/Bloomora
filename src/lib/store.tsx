@@ -5,7 +5,7 @@ import {
   useContext,
   useEffect,
   useReducer,
-  useRef,
+  useState,
   type ReactNode,
 } from "react";
 import type {
@@ -165,13 +165,14 @@ interface BouquetContextType {
   state: BouquetState;
   dispatch: React.Dispatch<BouquetAction>;
   totalFlowers: number;
+  isHydrated: boolean;
 }
 
 const BouquetContext = createContext<BouquetContextType | null>(null);
 
 export function BouquetProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(bouquetReducer, initialState);
-  const hydratedRef = useRef(false);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
     const saved = loadState();
@@ -183,14 +184,16 @@ export function BouquetProvider({ children }: { children: ReactNode }) {
     if (hasSavedData) {
       dispatch({ type: "HYDRATE", state: saved });
     }
-    hydratedRef.current = true;
+
+    const timeout = window.setTimeout(() => setIsHydrated(true), 0);
+    return () => window.clearTimeout(timeout);
   }, []);
 
   useEffect(() => {
-    if (hydratedRef.current) {
+    if (isHydrated) {
       saveState(state);
     }
-  }, [state]);
+  }, [isHydrated, state]);
 
   const totalFlowers = state.selectedFlowers.reduce(
     (sum, f) => sum + f.count,
@@ -198,7 +201,9 @@ export function BouquetProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <BouquetContext.Provider value={{ state, dispatch, totalFlowers }}>
+    <BouquetContext.Provider
+      value={{ state, dispatch, totalFlowers, isHydrated }}
+    >
       {children}
     </BouquetContext.Provider>
   );

@@ -3,6 +3,8 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 import { bouquetStore } from "../../route";
 import { sendEmail, generateBouquetEmailHtml } from "@/lib/email";
 
+const SUPABASE_READ_TIMEOUT_MS = 2500;
+
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ slug: string }> }
@@ -13,26 +15,38 @@ export async function POST(
     const supabase = getSupabaseAdmin();
 
     let bouquet;
+    const fallbackBouquet = bouquetStore.get(slug);
 
-    if (supabase) {
-      const { data, error } = await supabase
-        .from("bouquets")
-        .select("*")
-        .eq("slug", slug)
-        .single();
+    if (fallbackBouquet) {
+      bouquet = fallbackBouquet;
+    } else if (supabase) {
+
+      const { data, error } = await Promise.race([
+        supabase.from("bouquets").select("*").eq("slug", slug).single(),
+        new Promise<{ data: null; error: { message: string } }>((resolve) =>
+          setTimeout(
+            () =>
+              resolve({
+                data: null,
+                error: { message: "Bouquet lookup timed out" },
+              }),
+            SUPABASE_READ_TIMEOUT_MS
+          )
+        ),
+      ]);
 
       if (error || !data) {
         return NextResponse.json(
           { error: "Bouquet not found" },
           { status: 404 }
         );
+      } else {
+        bouquet = {
+          recipientName: data.recipient_name,
+          senderName: data.sender_name,
+          message: data.message,
+        };
       }
-
-      bouquet = {
-        recipientName: data.recipient_name,
-        senderName: data.sender_name,
-        message: data.message,
-      };
     } else {
       const stored = bouquetStore.get(slug);
       if (!stored) {

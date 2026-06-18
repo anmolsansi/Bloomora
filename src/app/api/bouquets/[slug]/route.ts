@@ -2,20 +2,51 @@ import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { bouquetStore } from "../route";
 
+const SUPABASE_READ_TIMEOUT_MS = 2500;
+
+function mapStoredBouquet(bouquet: NonNullable<ReturnType<typeof bouquetStore.get>>) {
+  return {
+    id: bouquet.id,
+    slug: bouquet.slug,
+    recipientName: bouquet.recipientName,
+    senderName: bouquet.senderName,
+    message: bouquet.message,
+    occasion: bouquet.occasion,
+    selectedFlowers: bouquet.selectedFlowers,
+    arrangementData: bouquet.arrangementData,
+    styleData: bouquet.styleData,
+    createdAt: bouquet.createdAt,
+  };
+}
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     const { slug } = await params;
+    const fallbackBouquet = bouquetStore.get(slug);
+
+    if (fallbackBouquet) {
+      return NextResponse.json(mapStoredBouquet(fallbackBouquet));
+    }
+
     const supabase = getSupabaseAdmin();
 
     if (supabase) {
-      const { data, error } = await supabase
-        .from("bouquets")
-        .select("*")
-        .eq("slug", slug)
-        .single();
+      const { data, error } = await Promise.race([
+        supabase.from("bouquets").select("*").eq("slug", slug).single(),
+        new Promise<{ data: null; error: { message: string } }>((resolve) =>
+          setTimeout(
+            () =>
+              resolve({
+                data: null,
+                error: { message: "Bouquet lookup timed out" },
+              }),
+            SUPABASE_READ_TIMEOUT_MS
+          )
+        ),
+      ]);
 
       if (error || !data) {
         return NextResponse.json(
@@ -48,18 +79,7 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({
-      id: bouquet.id,
-      slug: bouquet.slug,
-      recipientName: bouquet.recipientName,
-      senderName: bouquet.senderName,
-      message: bouquet.message,
-      occasion: bouquet.occasion,
-      selectedFlowers: bouquet.selectedFlowers,
-      arrangementData: bouquet.arrangementData,
-      styleData: bouquet.styleData,
-      createdAt: bouquet.createdAt,
-    });
+    return NextResponse.json(mapStoredBouquet(bouquet));
   } catch (error) {
     console.error("Failed to get bouquet:", error);
     return NextResponse.json(

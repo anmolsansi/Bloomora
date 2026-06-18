@@ -2,6 +2,7 @@
 
 import { useBouquet } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { generatePositions } from "@/lib/arrangement";
 
 const styles = [
   { id: "romantic", label: "Romantic" },
@@ -31,9 +32,23 @@ export function ArrangementControls() {
   const { state, dispatch } = useBouquet();
 
   const updateArrangement = (updates: Partial<typeof state.arrangement>) => {
+    const newArrangement = { ...state.arrangement, ...updates };
+
+    if (
+      "bouquetShape" in updates ||
+      "fullness" in updates
+    ) {
+      const positions = generatePositions(
+        state.selectedFlowers,
+        newArrangement.bouquetShape,
+        newArrangement.fullness
+      );
+      newArrangement.positions = positions;
+    }
+
     dispatch({
       type: "SET_ARRANGEMENT",
-      arrangement: { ...state.arrangement, ...updates },
+      arrangement: newArrangement,
     });
   };
 

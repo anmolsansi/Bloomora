@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSupabase } from "@/lib/supabase";
+import { getSupabaseAdmin } from "@/lib/supabase";
 import { bouquetStore } from "../route";
 
 export async function GET(
@@ -8,7 +8,7 @@ export async function GET(
 ) {
   try {
     const { slug } = await params;
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
 
     if (supabase) {
       const { data, error } = await supabase

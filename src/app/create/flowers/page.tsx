@@ -18,6 +18,38 @@ export default function FlowersPage() {
       (f) => f.flowerId === flowerId
     );
 
+    if (!existing && totalFlowers < MAX_FLOWERS) {
+      const flower = flowers.find((f) => f.id === flowerId);
+      if (flower) {
+        dispatch({
+          type: "SELECT_FLOWER",
+          flower: {
+            flowerId,
+            count: 1,
+            color: flower.colors[0],
+          },
+        });
+      }
+    }
+  };
+
+  const handleIncrement = (flowerId: string) => {
+    const existing = state.selectedFlowers.find(
+      (f) => f.flowerId === flowerId
+    );
+    if (existing && totalFlowers < MAX_FLOWERS) {
+      dispatch({
+        type: "UPDATE_FLOWER_COUNT",
+        flowerId,
+        count: existing.count + 1,
+      });
+    }
+  };
+
+  const handleDecrement = (flowerId: string) => {
+    const existing = state.selectedFlowers.find(
+      (f) => f.flowerId === flowerId
+    );
     if (existing) {
       if (existing.count > 1) {
         dispatch({
@@ -27,20 +59,6 @@ export default function FlowersPage() {
         });
       } else {
         dispatch({ type: "REMOVE_FLOWER", flowerId });
-      }
-    } else {
-      if (totalFlowers < MAX_FLOWERS) {
-        const flower = flowers.find((f) => f.id === flowerId);
-        if (flower) {
-          dispatch({
-            type: "SELECT_FLOWER",
-            flower: {
-              flowerId,
-              count: 1,
-              color: flower.colors[0],
-            },
-          });
-        }
       }
     }
   };
@@ -81,6 +99,8 @@ export default function FlowersPage() {
               flower={flower}
               count={getFlowerCount(flower.id)}
               onSelect={() => handleSelectFlower(flower.id)}
+              onIncrement={() => handleIncrement(flower.id)}
+              onDecrement={() => handleDecrement(flower.id)}
               disabled={
                 totalFlowers >= MAX_FLOWERS && getFlowerCount(flower.id) === 0
               }

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSupabase } from "@/lib/supabase";
+import { getSupabaseAdmin } from "@/lib/supabase";
 import { bouquetStore } from "../../route";
 import { sendEmail, generateBouquetEmailHtml } from "@/lib/email";
 
@@ -10,7 +10,7 @@ export async function POST(
   try {
     const { slug } = await params;
     const body = await request.json();
-    const supabase = getSupabase();
+    const supabase = getSupabaseAdmin();
 
     let bouquet;
 
@@ -66,7 +66,6 @@ export async function POST(
 
     const result = await sendEmail({
       to: recipientEmail,
-      from: senderEmail,
       subject: `A bouquet was made for you, ${bouquet.recipientName}! 💐`,
       html: emailHtml,
       text: `A bouquet was made for you! Open it here: ${bouquetUrl}`,

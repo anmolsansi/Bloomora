@@ -17,10 +17,12 @@ export default function DeliveryPage() {
   const [bouquetSlug, setBouquetSlug] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
 
   const handleCreateBouquet = async (emailData?: EmailFormData) => {
     setIsCreating(true);
+    setCreateError(null);
     setEmailError(null);
     try {
       const response = await fetch("/api/bouquets", {
@@ -73,7 +75,7 @@ export default function DeliveryPage() {
         }
       }
     } catch (error) {
-      setEmailError(
+      setCreateError(
         error instanceof Error ? error.message : "Failed to create bouquet"
       );
     } finally {
@@ -149,68 +151,75 @@ export default function DeliveryPage() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-4 mb-8">
-          <Card
-            className={`cursor-pointer transition-all ${
-              deliveryMethod === "email"
-                ? "ring-2 ring-sage-green"
-                : "hover:border-blush-pink/40"
-            }`}
+          <button
+            type="button"
             onClick={() => setDeliveryMethod("email")}
-          >
-            <CardContent className="flex flex-col items-center p-6">
-              <div className="w-12 h-12 bg-sage-green/10 rounded-full flex items-center justify-center mb-4">
-                <svg
-                  className="w-6 h-6 text-sage-green"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"
-                  />
-                </svg>
-              </div>
-              <h3 className="font-medium text-dark-green">Send by Email</h3>
-              <p className="text-sm text-soft-gray text-center mt-1">
-                We&apos;ll send a beautiful email with your bouquet
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card
-            className={`cursor-pointer transition-all ${
-              deliveryMethod === "link"
-                ? "ring-2 ring-sage-green"
-                : "hover:border-blush-pink/40"
+            className={`flex flex-col items-center p-6 rounded-xl border-2 transition-all ${
+              deliveryMethod === "email"
+                ? "border-sage-green bg-sage-green/5 ring-2 ring-sage-green"
+                : "border-blush-pink/20 bg-white hover:border-blush-pink/40"
             }`}
-            onClick={() => setDeliveryMethod("link")}
           >
-            <CardContent className="flex flex-col items-center p-6">
-              <div className="w-12 h-12 bg-sage-green/10 rounded-full flex items-center justify-center mb-4">
-                <svg
-                  className="w-6 h-6 text-sage-green"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.86-3.06a4.5 4.5 0 00-6.364 0l-4.5 4.5a4.5 4.5 0 001.242 7.244"
-                  />
-                </svg>
-              </div>
-              <h3 className="font-medium text-dark-green">Copy Link</h3>
-              <p className="text-sm text-soft-gray text-center mt-1">
-                Get a private link to share anywhere
-              </p>
-            </CardContent>
-          </Card>
+            <div className="w-12 h-12 bg-sage-green/10 rounded-full flex items-center justify-center mb-4">
+              <svg
+                className="w-6 h-6 text-sage-green"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"
+                />
+              </svg>
+            </div>
+            <h3 className="font-medium text-dark-green">Send by Email</h3>
+            <p className="text-sm text-soft-gray text-center mt-1">
+              We&apos;ll send a beautiful email with your bouquet
+            </p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setDeliveryMethod("link")}
+            className={`flex flex-col items-center p-6 rounded-xl border-2 transition-all ${
+              deliveryMethod === "link"
+                ? "border-sage-green bg-sage-green/5 ring-2 ring-sage-green"
+                : "border-blush-pink/20 bg-white hover:border-blush-pink/40"
+            }`}
+          >
+            <div className="w-12 h-12 bg-sage-green/10 rounded-full flex items-center justify-center mb-4">
+              <svg
+                className="w-6 h-6 text-sage-green"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.86-3.06a4.5 4.5 0 00-6.364 0l-4.5 4.5a4.5 4.5 0 001.242 7.244"
+                />
+              </svg>
+            </div>
+            <h3 className="font-medium text-dark-green">Copy Link</h3>
+            <p className="text-sm text-soft-gray text-center mt-1">
+              Get a private link to share anywhere
+            </p>
+          </button>
         </div>
+
+        {createError && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+            <p className="text-red-700 text-sm">{createError}</p>
+            <p className="text-red-500 text-xs mt-1">
+              Please check your selections and try again.
+            </p>
+          </div>
+        )}
 
         {deliveryMethod === "email" && (
           <Card className="mb-8">
